@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const { ObjectId } = mongoose.Schema.Types;
 
+const SlotSchema = new mongoose.Schema({
+    slot: { type: String },
+    status: { type: String, enum: ['available', 'occupied', 'booked']}
+  });
+  
+
 const parkingschema = mongoose.Schema({
         parkingname: {
             type: String
