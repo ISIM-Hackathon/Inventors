@@ -39,4 +39,16 @@ exports.postCheck = async(req, res) => {
 };
 
 
+exports.add = async(req, res) => {
+    try {
+        console.log(req.body)
+        const parkingData = new parking(req.body);
+        const pdata = await parkingData.save();
+
+        res.json({ message: "success", data: pdata });
+    } catch (err) {
+        res.status(500).json(err)
+    }
+};
+
     

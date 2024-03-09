@@ -11,6 +11,15 @@ const bookingschema = mongoose.Schema({
         },
         slot: {
             type: String
+        },
+        status: {
+            type: String
+        },
+        reservetime: {
+            type: Date
+        },
+        userid: {
+            type: String
         }
     }, {
         timestamps: true

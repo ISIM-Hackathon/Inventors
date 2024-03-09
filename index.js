@@ -61,6 +61,40 @@ const bodyParser = require('body-parser');
 const db = require('./src/db/db');
 const apis = require('./src/routes/routes');
 const parking = require('./src/schema/parkingSchema');
+const cron = require('node-cron');
+const user = require('./src/schema/userSchema');
+const booking = require('./src/schema/bookingSchema');
+
+////////////////node-cron////////////////////
+cron.schedule('* * * * *',async () => {
+    console.log("running schedular")
+    try {
+        let data = await booking.find();
+        for (let i = 0; i < data.length; i++) {
+            const bookingData = data[i];
+            const storedDateTime = bookingData?.reservetime;
+            const currentDateTime = new Date();
+
+
+            if (storedDateTime < currentDateTime && bookingData?.status === 'booked') {
+                
+                await booking.findByIdAndDelete(bookingData?._id)
+                const pData = await parking.findByIdAndUpdate({ "_id": "65e9621bd0f445c63fef5e7d" }, {[bookingData.slot]: 'vacant'}, { new: true })
+            
+                wsConnections.forEach(connection => {
+                    connection.send("{\"event\": \"parking updated\", \"data\":" + JSON.stringify(pData) + "}");
+                });
+                
+
+            }
+        }
+    } catch (error) {
+        console.error('Error occurred:', error);
+    }
+
+});
+
+/////////////////////////////////////////////////
 
 const app = express();
 const appWs = expressWs(app);
@@ -86,38 +120,42 @@ app.ws('/echo', ws => {
         const data = JSON.parse(msg);
         if (data.event == "sensor_update") {
             console.log('sensor_update event, updating data in database');
-            const pData = await parking.findByIdAndUpdate({ "_id": "65d738cb6f3620f15d6ccdc6" }, data.data, { new: true })
+
+            const pData = await parking.findByIdAndUpdate({ "_id": "65e9621bd0f445c63fef5e7d" }, data.data, { new: true })
+            
             wsConnections.forEach(connection => {
                 connection.send("{\"event\": \"parking updated\", \"data\":" + JSON.stringify(pData) + "}");
             });
-        } else if (data.event == "gate") {
+        }
+
+        else if (data.event == "gate") {
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        } else if (data.event=="gate_open_command"){ 
+        } else if (data.event == "gate_open_command") {
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        } else if (data.event=="gate_open_exit_command"){ 
+        } else if (data.event == "gate_open_exit_command") {
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        } else if (data.event=="gate_open_front"){ 
+        } else if (data.event == "gate_open_front") {
             console.log("hhhhh")
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        }else if (data.event=="gate_close_front"){ 
+        } else if (data.event == "gate_close_front") {
             console.log("hhhhh")
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        }else if (data.event=="gate_open_back"){ 
+        } else if (data.event == "gate_open_back") {
             console.log("hhhhh")
             wsConnections.forEach(connection => {
                 connection.send(msg);
             });
-        }else if (data.event=="gate_close_back"){ 
+        } else if (data.event == "gate_close_back") {
             console.log("hhhhh")
             wsConnections.forEach(connection => {
                 connection.send(msg);
@@ -135,15 +173,43 @@ app.ws('/echo', ws => {
 app.post('/updateParking', async (req, res) => {
 
 
-    const pData = await parking.findByIdAndUpdate({ "_id": "65d738cb6f3620f15d6ccdc6" }, req.body, { new: true })
+    const pData = await parking.findByIdAndUpdate({ "_id": "65e9621bd0f445c63fef5e7d" }, req.body, { new: true })
     wsConnections.forEach(connection => {
         connection.send("{\"event\": \"parking updated\", \"data\":" + JSON.stringify(pData) + "}");
     });
- 
+
 
     res.json({ message: "success", data: pData });
 });
 
+//////////////////////////////////////////////////////////////////////////
+
+// app.put('/parking/update/:parkingId', async (req, res) => {
+//     try {
+//         const { parkingId } = req.params;
+//         const { slot, status } = req.body;
+
+//         const updatedParkingRecord = await parking.findOneAndUpdate(
+//             { _id: parkingId, 'slots.slot': slot },
+//             { $set: { 'slots.$.status': status } },
+//             { new: true }
+//         );
+
+//         if (!updatedParkingRecord) {
+//             return res.status(404).json({ error: 'Parking facility or slot not found' });
+//         }
+
+//         wsConnections.forEach(connection => {
+//             connection.send("{\"event\": \"parking updated\", \"data\":" + JSON.stringify(updatedParkingRecord) + "}");
+//         });
+//         res.json({ message: 'Slot status updated successfully', data: updatedParkingRecord });
+//     } catch (error) {
+//         console.error('Error updating slot status:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
+
+////////////////////////////////////////////////////////////////
 
 const ip = "192.168.163.12";
 app.listen(PORT, ip, () => console.log('Server has been started'));

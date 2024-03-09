@@ -15,6 +15,9 @@ const userschema = mongoose.Schema({
         role: {
             type: String
         },
+        balance: {
+            type: Number
+        },
         booking: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'booking'

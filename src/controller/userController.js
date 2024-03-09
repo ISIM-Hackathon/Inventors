@@ -1,10 +1,11 @@
 const { request } = require('express');
 const user = require('../schema/userSchema');
+const booking = require('../schema/bookingSchema')
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
 //const notification = require('../notification/email');
 
-exports.login = async(req, res) => {
+exports.login = async (req, res) => {
     try {
 
         console.log(req.body);
@@ -34,7 +35,7 @@ exports.login = async(req, res) => {
     }
 };
 
-exports.add = async(req, res) => {
+exports.add = async (req, res) => {
     try {
         console.log(req.body)
         const salt = await bcrypt.genSalt(10);
@@ -97,7 +98,7 @@ exports.add = async(req, res) => {
 //         filters.validity = { $gte: new Date(filters.startDate) };
 //         delete filters.startDate;
 //       }
-  
+
 //       if (filters.endDate) {
 //         filters.validity = { ...filters.validity, $lte: new Date(filters.endDate) };
 //         delete filters.endDate;
@@ -106,7 +107,7 @@ exports.add = async(req, res) => {
 //     console.log(filters)
 //     //const leases = await lease.find(filters);
 //     const leases = await lease.find(filters);
-      
+
 //     res.json(leases);
 //   } catch (err) {
 //     console.error('Error searching leases:', err.message);
@@ -114,17 +115,55 @@ exports.add = async(req, res) => {
 //   }
 // }
 
-exports.getById = async(req, res) => {
+exports.getById = async (req, res) => {
     try {
         const data = await user.findById(req.params.id).populate('booking')
-        res.json({ message: "success", data: data })
+        if (data) {
+            res.json({ message: "success", data: data })
+        } else {
+            res.json({ message: "error"})
+        }
+
+        /////////////////////////////////////////////////////
+        // if (data.booking === null) {
+        //     res.json({ message: "success", data: data })
+        // } else {
+        //     const storedDateTime = data?.booking?.reservetime;
+        //     const currentDateTime = new Date();
+        //     if (storedDateTime < currentDateTime && data?.booking?.status === 'booked') {
+        //         const bookingupdate=await booking.findByIdAndUpdate(data.booking._id, { $set: { status: 'expired'} }, { new: true })
+        //         console.log(bookingupdate,"booking update")
+        //         console.log(data, "users id")
+        //         const data1=await user.findByIdAndUpdate(data._id, { $set: {booking: null}}, { new: true }).populate('booking');
+        //         console.log(data1,"user update")
+        //         res.json({ message: "success", data: data1 })
+
+        //     }else{
+        //         res.json({ message: "success", data: data })
+        //     }
+        // }
+
+
+        /////////////////////////////////////////////////////
     } catch (err) {
         res.status(500).json(err)
     }
 }
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     try {
         const userData = await user.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).populate('booking');
+        res.json({ message: 'success', data: userData });
+    } catch (err) {
+        res.status(500).json(err)
+    }
+}
+
+exports.updateBalance = async (req, res) => {
+    try {
+
+        const data = await user.findById(req.params.id).populate('booking')
+        const newBalance = data.balance - req.body.balanceCut 
+        const userData = await user.findByIdAndUpdate(req.params.id, { balance: newBalance }, { new: true }).populate('booking');
         res.json({ message: 'success', data: userData });
     } catch (err) {
         res.status(500).json(err)

@@ -32,12 +32,21 @@ exports.delete = async(req, res) => {
     const userData = await booking.findByIdAndDelete(req.params.id);
     try {
         if (userData) {
-            res.status(200).json({ message: 'success' });
+            res.status(200).json({ message: 'success', data: userData });
             
         }else{
             res.status(400).json({ message: "booking not found." }); 
         }
         
+    } catch (err) {
+        res.status(500).json(err)
+    }
+}
+
+exports.update = async (req, res) => {
+    try {
+        const bookingData = await booking.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
+        res.json({ message: 'success', data: bookingData });
     } catch (err) {
         res.status(500).json(err)
     }
